@@ -1,5 +1,5 @@
 To build the app:
-run 'ojet build'
+run 'npx ojet build'
 
 To run the app:
-run 'ojet serve'
+run 'npx ojet serve'
