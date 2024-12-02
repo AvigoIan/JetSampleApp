@@ -1,106 +1,84 @@
 import { h } from "preact";
 import { useEffect, useMemo, useState } from "preact/hooks";
-
-import { CButtonElement } from "oj-c/button";
 import CoreRouter = require("ojs/ojcorerouter");
 import KnockoutRouterAdapter = require("ojs/ojknockoutrouteradapter");
 import UrlParamAdapter = require("ojs/ojurlparamadapter");
 import * as ko from "knockout";
-import "ojs/ojknockout";
+import ArrayDataProvider = require("ojs/ojarraydataprovider");
+import { TabData } from "oj-c/tab-bar";
 import "oj-c/button";
 import "oj-c/tab-bar";
-import { SelectionActionDetail, TabData } from "oj-c/tab-bar";
-import ArrayDataProvider = require("ojs/ojarraydataprovider");
+import { Dashboard } from "../dashboard/index";
+import { Customers } from "../customers/index";
 
-const routes = [
-  { path: "", redirect: "dashboard" }, // Default route redirects to 'dashboard'
-  { path: "dashboard", detail: { label: "Dashboard" } },
-  { path: "customers", detail: { label: "Customers" } },
-];
-
-const datas: TabData<string>[] = [
-  {
-    itemKey: "dashboard",
-    label: "dashboard",
-    icon: {
-      type: "class",
-      class: "oj-ux-ico-home",
-    },
-  },
-  {
-    itemKey: "customers",
-    label: "customers",
-    icon: {
-      type: "class",
-      class: "oj-ux-ico-education",
-    },
-  },
-];
-
-export function Content(props: any) {
-  const handleSelectionAction = (event: {
-    detail: SelectionActionDetail<string | number>;
-  }) => {
-    console.log("navigate to" + event.detail.value);
-    // setSelectedTab(event.detail.value);
-  };
-
+export function Content() {
   const [isRouterSynced, setIsRouterSynced] = useState(false);
 
-  const tabDataArray = datas.map((tab) => ({
-    itemKey: tab.itemKey,
-    label: tab.label,
-    icon: tab.icon,
-  }));
+  const routes = [
+    { path: "", redirect: "dashboard" },
+    {
+      path: "dashboard",
+      detail: {
+        label: "Dashboard",
+        itemKey: "dashboard",
+        icon: { type: "class", class: "oj-ux-ico-home" },
+      },
+    },
+    {
+      path: "customers",
+      detail: {
+        label: "Customers",
+        itemKey: "customers",
+        icon: { type: "class", class: "oj-ux-ico-education" },
+      },
+    },
+  ];
 
-  const dataProvider = new ArrayDataProvider<string, TabData<string>>(datas, {
-    keyAttributes: "itemKey",
-  });
+  const tabDetails = routes.slice(1).map((route) => route.detail);
+
+  const dataProvider = useMemo(
+    () =>
+      new ArrayDataProvider<string, TabData<string>>(tabDetails, {
+        keyAttributes: "itemKey",
+      }),
+    []
+  );
 
   const router = useMemo(
     () => new CoreRouter(routes, { urlAdapter: new UrlParamAdapter() }),
     []
   );
-  const selection = useMemo(() => new KnockoutRouterAdapter(router), [router]);
+
+  const selection = new KnockoutRouterAdapter(router);
 
   useEffect(() => {
     router
       .sync()
       .then(() => {
         console.log("Router synchronized. Current path:", selection.path());
-        console.log(
-          "Initial state:",
-          selection.state() ? selection.state() : "No state"
-        );
-        setIsRouterSynced(true); // Set state when router is synced
+        setIsRouterSynced(true);
       })
       .catch((error) => {
         console.error("Router synchronization failed:", error);
+        setIsRouterSynced(false);
       });
-  }, []);
+  }, [router, selection]);
 
-  useEffect(() => {
-    const subscription = ko.computed(() => {
-      console.log("Current path:", selection.path());
-      console.log(
-        "Current state:",
-        selection.state() ? selection.state() : "No state"
-      );
-    });
+  const getPageElement = (page: string) => {
+    console.log("page is ", page);
+    switch (page) {
+      case "dashboard":
+        return <Dashboard />;
+      case "customers":
+        return <Customers />;
+      default:
+        return <Dashboard />;
+    }
+  };
 
-    return () => subscription.dispose();
-  }, [selection]);
-
+  console.log("selection is ", selection.state());
   return (
     <div class="oj-web-applayout-max-width oj-web-applayout-content">
-      <div class="oj-flex">
-        <div class="oj-flex-item oj-sm-width-1/4">
-          <oj-c-button id="icon_button4" label="Label and start and end slot">
-            <span slot="startIcon" class="oj-ux-ico-avatar"></span>
-            <span slot="endIcon" class="oj-ux-ico-avatar"></span>
-          </oj-c-button>
-        </div>
-      </div>
       <div class="oj-flex">
         <div class="oj-flex-item">
           {isRouterSynced && (
@@ -113,19 +91,14 @@ export function Content(props: any) {
                 display="standard"
                 aria-label="TabBar for demo"
                 onojSelectionAction={(event) => {
-                  console.log("Tab selected:", event.detail.value);
+                  const newTab = event.detail.value as string;
+                  console.log("Tab selected:", newTab);
+                  router.go({ path: newTab });
                 }}
               ></oj-c-tab-bar>
-              <div class="oj-flex">
-                <div class="oj-flex-item oj-sm-padding-4">
-                  Path {selection.path()}
-                </div>
-                {selection.state && selection.state() && (
-                  <div class="oj-flex-item oj-sm-padding-4">
-                    Label {selection.state().detail.label}
-                  </div>
-                )}
-              </div>
+              {/* NOT getting triggered the getPageElement */}
+              {selection.state() &&
+                getPageElement(selection.state().detail.itemKey)}
             </>
           )}
         </div>
