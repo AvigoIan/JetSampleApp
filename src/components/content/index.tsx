@@ -1,5 +1,5 @@
 import { h } from "preact";
-import { useCallback, useEffect, useMemo, useState } from "preact/hooks";
+import { useEffect, useMemo, useState } from "preact/hooks";
 import CoreRouter = require("ojs/ojcorerouter");
 import KnockoutRouterAdapter = require("ojs/ojknockoutrouteradapter");
 import UrlParamAdapter = require("ojs/ojurlparamadapter");
@@ -10,37 +10,39 @@ import "oj-c/button";
 import "oj-c/tab-bar";
 import { Dashboard } from "../dashboard/index";
 import { Customers } from "../customers/index";
+import { Summary } from "../summary/index";
+
+const routes = [
+  { path: "", redirect: "dashboard" },
+  {
+    path: "dashboard",
+    detail: {
+      label: "Dashboard",
+      itemKey: "dashboard",
+      icon: { type: "class", class: "oj-ux-ico-home" },
+    },
+  },
+  {
+    path: "customers",
+    detail: {
+      label: "Customers",
+      itemKey: "customers",
+      icon: { type: "class", class: "oj-ux-ico-education" },
+    },
+  },
+  {
+    path: "summary",
+    detail: {
+      label: "Summary",
+      itemKey: "summary",
+      icon: { type: "class", class: "oj-ux-ico-education" },
+    },
+  },
+];
 
 export function Content() {
-  const [currentPage, setCurrentPage] = useState("");
-
-  const routes = [
-    { path: "", redirect: "dashboard" },
-    {
-      path: "dashboard",
-      detail: {
-        label: "Dashboard",
-        itemKey: "dashboard",
-        icon: { type: "class", class: "oj-ux-ico-home" },
-      },
-    },
-    {
-      path: "customers",
-      detail: {
-        label: "Customers",
-        itemKey: "customers",
-        icon: { type: "class", class: "oj-ux-ico-education" },
-      },
-    },
-    {
-      path: "summary",
-      detail: {
-        label: "Summary",
-        itemKey: "summary",
-        icon: { type: "class", class: "oj-ux-ico-education" },
-      },
-    },
-  ];
+  const [currentPage, setCurrentPage] = useState("dashboard");
+  const [isRouterSynced, setIsRouterSynced] = useState(false);
 
   const tabDetails = routes.slice(1).map((route) => route.detail);
 
@@ -63,29 +65,30 @@ export function Content() {
     router
       .sync()
       .then(() => {
-        console.log("Router synchronized. Current path:", selection.path());
+        console.log("Router synchronized.");
       })
       .catch((error) => {
         console.error("Router synchronization failed:", error);
       });
-  }, [router, selection]);
+  }, [router]);
 
   useEffect(() => {
     const subscription = ko.computed(() => {
-      const page = selection.state()?.detail?.itemKey || "dashboard";
-      setCurrentPage(page); // Trigger re-render
+      const path = selection.path();
+      setCurrentPage(path);
     });
 
     return () => subscription.dispose();
   }, [selection]);
 
   const getPageElement = () => {
-    console.log("Rendering page:", currentPage);
     switch (currentPage) {
       case "dashboard":
         return <Dashboard />;
       case "customers":
         return <Customers />;
+      case "summary":
+        return <Summary />;
       default:
         return <Dashboard />;
     }
@@ -98,18 +101,16 @@ export function Content() {
           <>
             <oj-c-tab-bar
               data={dataProvider}
-              selection={selection.path}
+              selection={selection.path()}
               edge="top"
               layout="stretch"
               display="standard"
               aria-label="TabBar for demo"
               onojSelectionAction={(event) => {
                 const newTab = event.detail.value as string;
-                console.log("Tab selected:", newTab);
                 router.go({ path: newTab });
               }}
             ></oj-c-tab-bar>
-            {/* NOT getting triggered the getPageElement */}
             {getPageElement()}
           </>
         </div>
