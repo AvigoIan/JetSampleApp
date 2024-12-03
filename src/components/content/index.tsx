@@ -1,4 +1,4 @@
-import { h } from "preact";
+import { FunctionalComponent, h } from "preact";
 import { useEffect, useMemo, useState } from "preact/hooks";
 import CoreRouter = require("ojs/ojcorerouter");
 import KnockoutRouterAdapter = require("ojs/ojknockoutrouteradapter");
@@ -40,7 +40,7 @@ const routes = [
   },
 ];
 
-export function Content() {
+export const Content: FunctionalComponent = () => {
   const [currentPage, setCurrentPage] = useState("dashboard");
   const [isRouterSynced, setIsRouterSynced] = useState(false);
 
@@ -117,4 +117,6 @@ export function Content() {
       </div>
     </div>
   );
-}
+};
+
+export default Content;
