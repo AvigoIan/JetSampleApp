@@ -1,5 +1,5 @@
 import { h } from "preact";
-import { useEffect, useMemo, useState } from "preact/hooks";
+import { useCallback, useEffect, useMemo, useState } from "preact/hooks";
 import CoreRouter = require("ojs/ojcorerouter");
 import KnockoutRouterAdapter = require("ojs/ojknockoutrouteradapter");
 import UrlParamAdapter = require("ojs/ojurlparamadapter");
@@ -12,7 +12,7 @@ import { Dashboard } from "../dashboard/index";
 import { Customers } from "../customers/index";
 
 export function Content() {
-  const [isRouterSynced, setIsRouterSynced] = useState(false);
+  const [currentPage, setCurrentPage] = useState("");
 
   const routes = [
     { path: "", redirect: "dashboard" },
@@ -29,6 +29,14 @@ export function Content() {
       detail: {
         label: "Customers",
         itemKey: "customers",
+        icon: { type: "class", class: "oj-ux-ico-education" },
+      },
+    },
+    {
+      path: "summary",
+      detail: {
+        label: "Summary",
+        itemKey: "summary",
         icon: { type: "class", class: "oj-ux-ico-education" },
       },
     },
@@ -56,17 +64,24 @@ export function Content() {
       .sync()
       .then(() => {
         console.log("Router synchronized. Current path:", selection.path());
-        setIsRouterSynced(true);
       })
       .catch((error) => {
         console.error("Router synchronization failed:", error);
-        setIsRouterSynced(false);
       });
   }, [router, selection]);
 
-  const getPageElement = (page: string) => {
-    console.log("page is ", page);
-    switch (page) {
+  useEffect(() => {
+    const subscription = ko.computed(() => {
+      const page = selection.state()?.detail?.itemKey || "dashboard";
+      setCurrentPage(page); // Trigger re-render
+    });
+
+    return () => subscription.dispose();
+  }, [selection]);
+
+  const getPageElement = () => {
+    console.log("Rendering page:", currentPage);
+    switch (currentPage) {
       case "dashboard":
         return <Dashboard />;
       case "customers":
@@ -76,31 +91,27 @@ export function Content() {
     }
   };
 
-  console.log("selection is ", selection.state());
   return (
     <div class="oj-web-applayout-max-width oj-web-applayout-content">
       <div class="oj-flex">
         <div class="oj-flex-item">
-          {isRouterSynced && (
-            <>
-              <oj-c-tab-bar
-                data={dataProvider}
-                selection={selection.path}
-                edge="top"
-                layout="stretch"
-                display="standard"
-                aria-label="TabBar for demo"
-                onojSelectionAction={(event) => {
-                  const newTab = event.detail.value as string;
-                  console.log("Tab selected:", newTab);
-                  router.go({ path: newTab });
-                }}
-              ></oj-c-tab-bar>
-              {/* NOT getting triggered the getPageElement */}
-              {selection.state() &&
-                getPageElement(selection.state().detail.itemKey)}
-            </>
-          )}
+          <>
+            <oj-c-tab-bar
+              data={dataProvider}
+              selection={selection.path}
+              edge="top"
+              layout="stretch"
+              display="standard"
+              aria-label="TabBar for demo"
+              onojSelectionAction={(event) => {
+                const newTab = event.detail.value as string;
+                console.log("Tab selected:", newTab);
+                router.go({ path: newTab });
+              }}
+            ></oj-c-tab-bar>
+            {/* NOT getting triggered the getPageElement */}
+            {getPageElement()}
+          </>
         </div>
       </div>
     </div>
