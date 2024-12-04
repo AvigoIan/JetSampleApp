@@ -70,7 +70,7 @@ export const Content: FunctionalComponent = () => {
       .catch((error) => {
         console.error("Router synchronization failed:", error);
       });
-  }, [router]);
+  }, []);
 
   useEffect(() => {
     const subscription = ko.computed(() => {
